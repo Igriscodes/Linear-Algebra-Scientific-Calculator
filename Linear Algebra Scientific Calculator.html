@@ -1,0 +1,653 @@
+<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Linear Algebra Scientific Calculator -- Single File</title>
+<style>
+  :root{
+    --bg:#0b0f1a;
+    --panel:#12182a;
+    --accent:#7c5cff;
+    --accent-2:#2de2e6;
+    --text:#e6e9ef;
+    --muted:#9aa4b2;
+    --danger:#ff6b6b;
+    --ok:#2ee59d;
+    --grid-gap:14px;
+    --radius:16px;
+    --mono:'SFMono-Regular',Consolas,Menlo,monospace;
+    --sans:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    background:
+      radial-gradient(1200px 600px at 10% 10%, #0b0f1a 0%, #0a0d17 40%, #070a12 100%),
+      linear-gradient(180deg, rgba(124,92,255,0.08), rgba(45,226,230,0.06));
+    color:var(--text);
+    font-family:var(--sans);
+  }
+  header{
+    padding:32px 24px 12px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+  .brand{
+    display:flex;align-items:center;gap:14px;
+  }
+  .logo{
+    width:48px;height:48px;border-radius:12px;
+    background:
+      radial-gradient(120% 120% at 20% 20%, var(--accent) 0%, transparent 60%),
+      radial-gradient(120% 120% at 80% 80%, var(--accent-2) 0%, transparent 60%),
+      linear-gradient(135deg, #1b2238, #0f1426);
+    box-shadow:0 10px 30px rgba(124,92,255,0.35), inset 0 0 20px rgba(45,226,230,0.25);
+  }
+  h1{font-size:22px;margin:0;letter-spacing:0.4px}
+  .actions{display:flex;gap:10px}
+  button{
+    appearance:none;border:none;cursor:pointer;
+    padding:10px 14px;border-radius:12px;
+    background:linear-gradient(135deg, var(--accent), var(--accent-2));
+    color:#0b0f1a;font-weight:600;letter-spacing:0.2px;
+    box-shadow:0 8px 24px rgba(124,92,255,0.35);
+    transition:transform .08s ease, box-shadow .2s ease, filter .2s ease;
+  }
+  button.secondary{
+    background:linear-gradient(135deg, #1b2238, #0f1426);
+    color:var(--text);
+    border:1px solid rgba(124,92,255,0.35);
+    box-shadow:0 8px 24px rgba(27,34,56,0.6);
+  }
+  button:hover{transform:translateY(-1px);filter:saturate(1.1)}
+  button:active{transform:translateY(0)}
+  main{
+    padding:12px 24px 40px;
+    display:grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap:var(--grid-gap);
+  }
+  .panel{
+    background:linear-gradient(180deg, rgba(18,24,42,0.9), rgba(12,16,30,0.9));
+    border:1px solid rgba(124,92,255,0.25);
+    border-radius:var(--radius);
+    box-shadow:
+      0 20px 50px rgba(124,92,255,0.12),
+      inset 0 0 40px rgba(45,226,230,0.06);
+    padding:18px;
+  }
+  .panel h2{
+    margin:0 0 12px;font-size:18px;font-weight:700;letter-spacing:0.3px;
+  }
+  .grid-2{
+    display:grid;grid-template-columns:1fr 1fr;gap:var(--grid-gap);
+  }
+  .grid-3{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:var(--grid-gap);
+  }
+  .section{
+    margin-top:10px;padding-top:10px;border-top:1px dashed rgba(124,92,255,0.25);
+  }
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+  input[type="number"], input[type="text"], textarea, select{
+    width:100%;padding:10px 12px;border-radius:12px;border:1px solid rgba(124,92,255,0.25);
+    background:#0f1426;color:var(--text);font-family:var(--mono);
+    box-shadow:inset 0 0 20px rgba(45,226,230,0.06);
+  }
+  textarea{min-height:80px;resize:vertical}
+  .matrix-grid{
+    display:grid;gap:8px;
+    grid-template-columns:repeat(var(--cols,3), minmax(60px, 1fr));
+    align-items:center;
+  }
+  .matrix-cell input{
+    width:100%;text-align:center;
+  }
+  .row-controls{
+    display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;
+  }
+  .pill{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:8px 10px;border-radius:999px;background:#0f1426;border:1px solid rgba(124,92,255,0.25);
+    color:var(--muted);font-size:12px;
+  }
+  .output{
+    background:linear-gradient(180deg, rgba(15,20,38,0.9), rgba(10,14,28,0.9));
+    border:1px solid rgba(45,226,230,0.25);
+    border-radius:var(--radius);
+    padding:14px;margin-top:12px;font-family:var(--mono);
+    white-space:pre-wrap;word-break:break-word;
+  }
+  .badge{
+    display:inline-block;padding:6px 10px;border-radius:999px;font-size:11px;font-weight:700;
+    background:linear-gradient(135deg, var(--accent), var(--accent-2));color:#0b0f1a;margin-right:8px;
+  }
+  .ok{color:var(--ok)}
+  .danger{color:var(--danger)}
+  .tiny{font-size:11px;color:var(--muted)}
+  .footer{
+    padding:16px 24px;color:var(--muted);font-size:12px;text-align:center;
+  }
+  .subgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .inline-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .note{font-size:12px;color:var(--muted);margin-top:6px}
+  .divider{height:1px;background:linear-gradient(90deg, rgba(124,92,255,0.25), rgba(45,226,230,0.25));margin:12px 0}
+</style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="logo" aria-hidden="true"></div>
+      <div>
+        <h1>Linear Algebra Scientific Calculator</h1>
+        <div class="tiny">• HTML + CSS + JavaScript •</div>
+      </div>
+    </div>
+    <div class="actions">
+      <button id="exampleBtn">Example</button>
+      <button class="secondary" id="clearBtn">Clear</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="panel">
+      <h2>Matrices & systems of linear equations</h2>
+
+      <div class="grid-2">
+        <div>
+          <label>Matrix A (m × n)</label>
+          <div class="row-controls">
+            <span class="pill">Rows: <input type="number" id="rowsA" min="1" value="3" style="width:70px"></span>
+            <span class="pill">Cols: <input type="number" id="colsA" min="1" value="3" style="width:70px"></span>
+            <button class="secondary" id="resizeA">Resize</button>
+          </div>
+          <div id="matrixA" class="matrix-grid" style="--cols:3"></div>
+
+          <div class="inline-actions section">
+            <button id="detA">det(A)</button>
+            <button id="invA">A⁻¹</button>
+            <button id="rankA">rank(A)</button>
+            <button id="rrefA">RREF(A)</button>
+            <button id="transposeA">Aᵀ</button>
+            <button id="traceA">tr(A)</button>
+          </div>
+          <div id="outA" class="output"></div>
+        </div>
+
+        <div>
+          <label>Vector / RHS b (length m)</label>
+          <div class="row-controls">
+            <span class="pill">Length: <input type="number" id="lenB" min="1" value="3" style="width:70px"></span>
+            <button class="secondary" id="resizeB">Resize</button>
+          </div>
+          <div id="vectorB" class="matrix-grid" style="--cols:1"></div>
+
+          <div class="inline-actions section">
+            <button id="solveAxB">Solve A x = b</button>
+            <button id="leastSquares">Least squares (if overdetermined)</button>
+          </div>
+          <div id="outSystem" class="output"></div>
+
+          <div class="divider"></div>
+
+          <label>Matrix B (n × p) for multiplication</label>
+          <div class="row-controls">
+            <span class="pill">Rows: <input type="number" id="rowsBmat" min="1" value="3" style="width:70px"></span>
+            <span class="pill">Cols: <input type="number" id="colsBmat" min="1" value="2" style="width:70px"></span>
+            <button class="secondary" id="resizeBmat">Resize</button>
+          </div>
+          <div id="matrixB" class="matrix-grid" style="--cols:2"></div>
+          <div class="inline-actions section">
+            <button id="mulAB">A · B</button>
+          </div>
+          <div id="outMul" class="output"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Vector spaces, independence, basis & mappings</h2>
+
+      <div class="section">
+        <div class="grid-2">
+          <div>
+            <label>Set of vectors (columns) V ∈ ℝᵐˣᵏ</label>
+            <div class="row-controls">
+              <span class="pill">Dim m: <input type="number" id="vsDim" min="1" value="3" style="width:70px"></span>
+              <span class="pill">Count k: <input type="number" id="vsCount" min="1" value="3" style="width:70px"></span>
+              <button class="secondary" id="resizeVS">Resize</button>
+            </div>
+            <div id="vsMatrix" class="matrix-grid" style="--cols:3"></div>
+            <div class="inline-actions section">
+              <button id="checkIndep">Check linear independence</button>
+              <button id="basisSpan">Basis of span(V)</button>
+              <button id="computeRankV">rank(V)</button>
+            </div>
+            <div id="outVS" class="output"></div>
+          </div>
+
+          <div>
+            <label>Linear mapping T: ℝⁿ → ℝᵐ (matrix M)</label>
+            <div class="row-controls">
+              <span class="pill">m (rows): <input type="number" id="mapRows" min="1" value="3" style="width:70px"></span>
+              <span class="pill">n (cols): <input type="number" id="mapCols" min="1" value="3" style="width:70px"></span>
+              <button class="secondary" id="resizeMap">Resize</button>
+            </div>
+            <div id="mapMatrix" class="matrix-grid" style="--cols:3"></div>
+
+            <div class="subgrid section">
+              <div>
+                <label>Vector x ∈ ℝⁿ</label>
+                <div id="mapVector" class="matrix-grid" style="--cols:1"></div>
+                <div class="inline-actions section">
+                  <button id="applyMap">Compute T(x) = Mx</button>
+                </div>
+              </div>
+              <div>
+                <label>Mapping analysis</label>
+                <div class="inline-actions">
+                  <button id="kernelBtn">Kernel basis (null space)</button>
+                  <button id="imageBtn">Image basis (column space)</button>
+                  <button id="composeBtn">Compose with A (A ∘ T)</button>
+                </div>
+              </div>
+            </div>
+            <div id="outMap" class="output"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2 style="margin-bottom:8px">Affine spaces</h2>
+        <div class="grid-3">
+          <div>
+            <label>Base point p ∈ ℝᵐ</label>
+            <div class="row-controls">
+              <span class="pill">Dim m: <input type="number" id="affDim" min="1" value="3" style="width:70px"></span>
+              <button class="secondary" id="resizeAff">Resize</button>
+            </div>
+            <div id="affPoint" class="matrix-grid" style="--cols:1"></div>
+          </div>
+          <div>
+            <label>Direction subspace D (columns)</label>
+            <div class="row-controls">
+              <span class="pill">Vectors k: <input type="number" id="affK" min="1" value="2" style="width:70px"></span>
+              <button class="secondary" id="resizeAffDir">Resize</button>
+            </div>
+            <div id="affDir" class="matrix-grid" style="--cols:2"></div>
+          </div>
+          <div>
+            <label>Query point q</label>
+            <div id="affQuery" class="matrix-grid" style="--cols:1"></div>
+            <div class="inline-actions section">
+              <button id="affCheck">Check q ∈ p + span(D)</button>
+              <button id="affCoords">Find affine coordinates of q</button>
+            </div>
+          </div>
+        </div>
+        <div id="outAff" class="output"></div>
+      </div>
+    </section>
+  </main>
+
+  <div class="footer">
+    Linear Algebra • Matrices • Systems & Solving • Vector Spaces • Linear Independence • Basis & Rank • Linear Mappings • Affine Spaces
+  </div>
+
+<script>
+const fmt = (x, digits=6) => {
+  if (Number.isNaN(x)) return 'NaN';
+  if (!isFinite(x)) return (x>0?'∞':'-∞');
+  const r = Math.round(x * 10**digits) / 10**digits;
+  return (Math.abs(r) < 1e-12) ? '0' : r.toString();
+};
+const deepCopy = m => m.map(row => row.slice());
+const zeros = (r,c) => Array.from({length:r},()=>Array(c).fill(0));
+const identity = n => Array.from({length:n},(_,i)=>Array.from({length:n},(_,j)=>i===j?1:0));
+const isSquare = A => A.length>0 && A.length===A[0].length;
+const shape = A => [A.length, (A[0]||[]).length];
+const toVector = grid => grid.map(row => row[0]);
+
+function buildMatrix(container, rows, cols, fill=0){
+  container.innerHTML='';
+  container.style.setProperty('--cols', cols);
+  for(let i=0;i<rows;i++){
+    for(let j=0;j<cols;j++){
+      const wrap = document.createElement('div');
+      wrap.className='matrix-cell';
+      const inp = document.createElement('input');
+      inp.type='number'; inp.step='any';
+      inp.value = Array.isArray(fill) ? (fill[i]?.[j] ?? 0) : fill;
+      wrap.appendChild(inp);
+      container.appendChild(wrap);
+    }
+  }
+}
+function readMatrix(container, rows, cols){
+  const inputs = container.querySelectorAll('input');
+  const A = zeros(rows, cols);
+  let k=0;
+  for(let i=0;i<rows;i++){
+    for(let j=0;j<cols;j++){
+      A[i][j] = parseFloat(inputs[k++].value || '0');
+    }
+  }
+  return A;
+}
+function writeMatrix(container, M){
+  const [r,c] = shape(M);
+  buildMatrix(container, r, c, M);
+}
+function matrixToString(M){
+  const [r,c] = shape(M);
+  return M.map(row => row.map(x=>fmt(x)).join('\t')).join('\n');
+}
+
+function rref(A){
+  const [m,n] = shape(A);
+  const R = deepCopy(A);
+  let row = 0, col = 0;
+  const pivots = [];
+  while(row<m && col<n){
+    let pivotRow = row;
+    for(let i=row;i<m;i++){
+      if(Math.abs(R[i][col]) > Math.abs(R[pivotRow][col])) pivotRow = i;
+    }
+    if(Math.abs(R[pivotRow][col]) < 1e-12){ col++; continue; }
+    if(pivotRow !== row){ const tmp = R[row]; R[row] = R[pivotRow]; R[pivotRow] = tmp; }
+    const pivot = R[row][col];
+    for(let j=col;j<n;j++) R[row][j] /= pivot;
+    for(let i=0;i<m;i++){
+      if(i===row) continue;
+      const factor = R[i][col];
+      for(let j=col;j<n;j++) R[i][j] -= factor * R[row][j];
+    }
+    pivots.push(col);
+    row++; col++;
+  }
+  return {R, rank: pivots.length, pivots};
+}
+function rank(A){ return rref(A).rank; }
+function transpose(A){
+  const [m,n] = shape(A);
+  const T = zeros(n,m);
+  for(let i=0;i<m;i++) for(let j=0;j<n;j++) T[j][i]=A[i][j];
+  return T;
+}
+function multiply(A,B){
+  const [m,n] = shape(A), [n2,p] = shape(B);
+  if(n!==n2) throw new Error('Incompatible shapes');
+  const C = zeros(m,p);
+  for(let i=0;i<m;i++) for(let k=0;k<n;k++) for(let j=0;j<p;j++) C[i][j] += A[i][k]*B[k][j];
+  return C;
+}
+function determinant(A){
+  if(!isSquare(A)) throw new Error('Square matrix required');
+  const [n] = shape(A);
+  const M = deepCopy(A);
+  let det = 1, swaps = 0;
+  for(let i=0;i<n;i++){
+    let pivotRow = i;
+    for(let r=i;r<n;r++) if(Math.abs(M[r][i]) > Math.abs(M[pivotRow][i])) pivotRow = r;
+    if(Math.abs(M[pivotRow][i]) < 1e-12) return 0;
+    if(pivotRow !== i){ const tmp=M[i]; M[i]=M[pivotRow]; M[pivotRow]=tmp; swaps++; }
+    const pivot = M[i][i];
+    det *= pivot;
+    for(let r=i+1;r<n;r++){
+      const f = M[r][i]/pivot;
+      for(let c=i;c<n;c++) M[r][c] -= f*M[i][c];
+    }
+  }
+  return det * (swaps%2===0 ? 1 : -1);
+}
+function inverse(A){
+  if(!isSquare(A)) throw new Error('Square matrix required');
+  const n = A.length;
+  const M = deepCopy(A);
+  const I = identity(n);
+  for(let i=0;i<n;i++) M[i] = M[i].concat(I[i]);
+  const m = n, totalCols = 2*n;
+  let row=0, col=0;
+  while(row<m && col<n){
+    let pivotRow=row;
+    for(let r=row;r<m;r++) if(Math.abs(M[r][col]) > Math.abs(M[pivotRow][col])) pivotRow=r;
+    if(Math.abs(M[pivotRow][col]) < 1e-12){ col++; continue; }
+    if(pivotRow!==row){ const tmp=M[row]; M[row]=M[pivotRow]; M[pivotRow]=tmp; }
+    const pivot = M[row][col];
+    for(let j=0;j<totalCols;j++) M[row][j] /= pivot;
+    for(let r=0;r<m;r++){
+      if(r===row) continue;
+      const f = M[r][col];
+      for(let j=0;j<totalCols;j++) M[r][j] -= f*M[row][j];
+    }
+    row++; col++;
+  }
+  for(let i=0;i<n;i++){
+    for(let j=0;j<n;j++){
+      if(i===j && Math.abs(M[i][j]-1)>1e-9) throw new Error('Matrix is singular');
+      if(i!==j && Math.abs(M[i][j])>1e-9) throw new Error('Matrix is singular');
+    }
+  }
+  const Inv = zeros(n,n);
+  for(let i=0;i<n;i++) for(let j=0;j<n;j++) Inv[i][j] = M[i][n+j];
+  return Inv;
+}
+function trace(A){
+  if(!isSquare(A)) throw new Error('Square matrix required');
+  return A.reduce((s,row,i)=>s+row[i],0);
+}
+
+function solve(A,b){
+  const [m,n] = shape(A);
+  const Ab = A.map((row,i)=>row.concat([b[i]||0]));
+  const {R} = rref(Ab);
+  const rk = rank(A);
+  if(n===m && rk===n){
+    const x = Array(n).fill(0);
+    for(let i=n-1;i>=0;i--){
+      let s = R[i][n];
+      for(let j=i+1;j<n;j++) s -= R[i][j]*x[j];
+      x[i] = s / R[i][i];
+    }
+    return {type:'unique', x};
+  }
+  const {R:RA, pivots} = rref(A);
+  if(rk===n){
+    const At = transpose(A);
+    const normal = multiply(At,A);
+    const rhs = multiply(At, b.map(x=>[x]));
+    const x = solve(normal, rhs.map(r=>r[0])).x;
+    return {type:'least_squares', x};
+  }else{
+    const N = nullspaceBasis(A);
+    const sol = leastNormParticular(A,b);
+    if(!sol) return {type:'inconsistent', message:'System is inconsistent'};
+    return {type:'infinite', x_p:sol, nullspace:N};
+  }
+}
+function leastNormParticular(A,b){
+  const At = transpose(A);
+  const normal = multiply(At,A);
+  try{
+    const inv = inverse(normal);
+    const pinv = multiply(inv, At);
+    const x = multiply(pinv, b.map(x=>[x])).map(r=>r[0]);
+    const Ax = multiply(A, x.map(v=>[v])).map(r=>r[0]);
+    const res = Ax.map((v,i)=>v-(b[i]||0));
+    const norm = Math.sqrt(res.reduce((s,v)=>s+v*v,0));
+    if(norm < 1e-8) return x;
+    return null;
+  }catch(e){ return null; }
+}
+
+function nullspaceBasis(A){
+  const [m,n] = shape(A);
+  const {R, pivots} = rref(A);
+  const pivotSet = new Set(pivots);
+  const free = [];
+  for(let j=0;j<n;j++) if(!pivotSet.has(j)) free.push(j);
+  const basis = [];
+  for(const f of free){
+    const v = Array(n).fill(0);
+    v[f] = 1;
+    for(let i=0;i<R.length;i++){
+      let pc = R[i].findIndex(x=>Math.abs(x-1)<1e-9);
+      if(pc>=0) v[pc] = -R[i][f];
+    }
+    basis.push(v);
+  }
+  return basis;
+}
+function columnSpaceBasis(A){
+  const At = transpose(A);
+  const {pivots} = rref(At);
+  return pivots.map(j => A.map(row=>row[j]));
+}
+
+const el = id => document.getElementById(id);
+
+function init(){
+  buildMatrix(el('matrixA'), 3, 3, [[2,-1,0],[1,2,1],[0,1,3]]);
+  buildMatrix(el('vectorB'), 3, 1, [[1],[0],[4]]);
+  buildMatrix(el('matrixB'), 3, 2, [[1,0],[0,1],[2,-1]]);
+  buildMatrix(el('vsMatrix'), 3, 3, [[1,0,1],[0,1,1],[1,1,2]]);
+  buildMatrix(el('mapMatrix'), 3, 3, [[1,2,0],[0,1,1],[3,-1,2]]);
+  buildMatrix(el('mapVector'), 3, 1, [[1],[2],[3]]);
+  buildMatrix(el('affPoint'), 3, 1, [[1],[0],[2]]);
+  buildMatrix(el('affDir'), 3, 2, [[1,0],[0,1],[1,1]]);
+  buildMatrix(el('affQuery'), 3, 1, [[2],[1],[4]]);
+}
+init();
+
+el('resizeA').addEventListener('click', ()=>{ buildMatrix(el('matrixA'), parseInt(el('rowsA').value), parseInt(el('colsA').value), 0); });
+el('resizeB').addEventListener('click', ()=>{ buildMatrix(el('vectorB'), parseInt(el('lenB').value), 1, 0); });
+el('resizeBmat').addEventListener('click', ()=>{ buildMatrix(el('matrixB'), parseInt(el('rowsBmat').value), parseInt(el('colsBmat').value), 0); });
+el('resizeVS').addEventListener('click', ()=>{ buildMatrix(el('vsMatrix'), parseInt(el('vsDim').value), parseInt(el('vsCount').value), 0); });
+el('resizeMap').addEventListener('click', ()=>{
+  const m = parseInt(el('mapRows').value), n = parseInt(el('mapCols').value);
+  buildMatrix(el('mapMatrix'), m, n, 0);
+  buildMatrix(el('mapVector'), n, 1, 0);
+});
+el('resizeAff').addEventListener('click', ()=>{
+  const m = parseInt(el('affDim').value);
+  buildMatrix(el('affPoint'), m, 1, 0);
+  buildMatrix(el('affQuery'), m, 1, 0);
+  buildMatrix(el('affDir'), m, parseInt(el('affK').value), 0);
+});
+el('resizeAffDir').addEventListener('click', ()=>{ buildMatrix(el('affDir'), parseInt(el('affDim').value), parseInt(el('affK').value), 0); });
+
+el('detA').addEventListener('click', ()=>{
+  try{ el('outA').textContent = `det(A) = ${fmt(determinant(readMatrix(el('matrixA'), parseInt(el('rowsA').value), parseInt(el('colsA').value))))}`; }
+  catch(e){ el('outA').textContent = `Error: ${e.message}`; }
+});
+el('invA').addEventListener('click', ()=>{
+  try{ el('outA').textContent = `A⁻¹ =\n${matrixToString(inverse(readMatrix(el('matrixA'), parseInt(el('rowsA').value), parseInt(el('colsA').value))))}`; }
+  catch(e){ el('outA').textContent = `Error: ${e.message}`; }
+});
+el('rankA').addEventListener('click', ()=>{ el('outA').textContent = `rank(A) = ${rank(readMatrix(el('matrixA'), parseInt(el('rowsA').value), parseInt(el('colsA').value)))}`; });
+el('rrefA').addEventListener('click', ()=>{ el('outA').textContent = `RREF(A) =\n${matrixToString(rref(readMatrix(el('matrixA'), parseInt(el('rowsA').value), parseInt(el('colsA').value))).R)}`; });
+el('transposeA').addEventListener('click', ()=>{ el('outA').textContent = `Aᵀ =\n${matrixToString(transpose(readMatrix(el('matrixA'), parseInt(el('rowsA').value), parseInt(el('colsA').value))))}`; });
+el('traceA').addEventListener('click', ()=>{
+  try{ el('outA').textContent = `tr(A) = ${fmt(trace(readMatrix(el('matrixA'), parseInt(el('rowsA').value), parseInt(el('colsA').value))))}`; }
+  catch(e){ el('outA').textContent = `Error: ${e.message}`; }
+});
+
+el('solveAxB').addEventListener('click', ()=>{
+  try{
+    const sol = solve(readMatrix(el('matrixA'), parseInt(el('rowsA').value), parseInt(el('colsA').value)), toVector(readMatrix(el('vectorB'), parseInt(el('lenB').value), 1)));
+    if(sol.type==='unique') el('outSystem').textContent = `Unique solution x:\n${sol.x.map(fmt).join('\n')}`;
+    else if(sol.type==='least_squares') el('outSystem').textContent = `Least squares solution x:\n${sol.x.map(fmt).join('\n')}`;
+    else if(sol.type==='infinite') el('outSystem').textContent = `Infinite solutions:\nParticular x_p:\n${sol.x_p.map(fmt).join('\n')}\n\nNull space basis:\n${sol.nullspace.map(v=>v.map(fmt).join('\t')).join('\n')}`;
+    else el('outSystem').textContent = `System is inconsistent.`;
+  }catch(e){ el('outSystem').textContent = `Error: ${e.message}`; }
+});
+el('leastSquares').addEventListener('click', ()=>{
+  try{
+    const A = readMatrix(el('matrixA'), parseInt(el('rowsA').value), parseInt(el('colsA').value));
+    const b = toVector(readMatrix(el('vectorB'), parseInt(el('lenB').value), 1));
+    const At = transpose(A);
+    el('outSystem').textContent = `Least squares via normal equations:\n${solve(multiply(At,A), multiply(At, b.map(x=>[x])).map(r=>r[0])).x.map(fmt).join('\n')}`;
+  }catch(e){ el('outSystem').textContent = `Error: ${e.message}`; }
+});
+
+el('mulAB').addEventListener('click', ()=>{
+  try{ el('outMul').textContent = `A · B =\n${matrixToString(multiply(readMatrix(el('matrixA'), parseInt(el('rowsA').value), parseInt(el('colsA').value)), readMatrix(el('matrixB'), parseInt(el('rowsBmat').value), parseInt(el('colsBmat').value))))}`; }
+  catch(e){ el('outMul').textContent = `Error: ${e.message}`; }
+});
+
+el('checkIndep').addEventListener('click', ()=>{
+  const k = parseInt(el('vsCount').value);
+  const r = rank(readMatrix(el('vsMatrix'), parseInt(el('vsDim').value), k));
+  el('outVS').textContent = `rank(V) = ${r}\nLinear independence: ${r===k ? 'YES' : 'NO'}`;
+});
+el('basisSpan').addEventListener('click', ()=>{ el('outVS').textContent = `Basis of span(V) (columns):\n${columnSpaceBasis(readMatrix(el('vsMatrix'), parseInt(el('vsDim').value), parseInt(el('vsCount').value))).map(col=>col.map(fmt).join('\t')).join('\n')}`; });
+el('computeRankV').addEventListener('click', ()=>{ el('outVS').textContent = `rank(V) = ${rank(readMatrix(el('vsMatrix'), parseInt(el('vsDim').value), parseInt(el('vsCount').value)))}`; });
+
+el('applyMap').addEventListener('click', ()=>{
+  try{
+    const M = readMatrix(el('mapMatrix'), parseInt(el('mapRows').value), parseInt(el('mapCols').value));
+    const x = toVector(readMatrix(el('mapVector'), parseInt(el('mapCols').value), 1));
+    el('outMap').textContent = `T(x) = Mx:\n${multiply(M, x.map(v=>[v])).map(r=>fmt(r[0])).join('\n')}`;
+  }catch(e){ el('outMap').textContent = `Error: ${e.message}`; }
+});
+el('kernelBtn').addEventListener('click', ()=>{
+  const K = nullspaceBasis(readMatrix(el('mapMatrix'), parseInt(el('mapRows').value), parseInt(el('mapCols').value)));
+  el('outMap').textContent = `Kernel basis:\n${K.length ? K.map(v=>v.map(fmt).join('\t')).join('\n') : '(trivial {0})'}`;
+});
+el('imageBtn').addEventListener('click', ()=>{ el('outMap').textContent = `Image basis:\n${columnSpaceBasis(readMatrix(el('mapMatrix'), parseInt(el('mapRows').value), parseInt(el('mapCols').value))).map(v=>v.map(fmt).join('\t')).join('\n')}`; });
+el('composeBtn').addEventListener('click', ()=>{
+  try{ el('outMap').textContent = `Composition (A ∘ T) matrix:\n${matrixToString(multiply(readMatrix(el('matrixA'), parseInt(el('rowsA').value), parseInt(el('colsA').value)), readMatrix(el('mapMatrix'), parseInt(el('mapRows').value), parseInt(el('mapCols').value))))}`; }
+  catch(e){ el('outMap').textContent = `Error: ${e.message}`; }
+});
+
+el('affCheck').addEventListener('click', ()=>{
+  const m = parseInt(el('affDim').value);
+  const p = toVector(readMatrix(el('affPoint'), m, 1)), D = readMatrix(el('affDir'), m, parseInt(el('affK').value)), q = toVector(readMatrix(el('affQuery'), m, 1));
+  const rhs = q.map((qi,i)=>qi - (p[i]||0));
+  const sol = solve(D, rhs);
+  if(sol.type!=='inconsistent'){
+    const recon = multiply(D, (sol.x||sol.x_p).map(v=>[v])).map(r=>r[0]);
+    const err = Math.sqrt(recon.map((v,i)=>v-rhs[i]).reduce((s,v)=>s+v*v,0));
+    el('outAff').textContent = err<1e-8 ? `q ∈ p + span(D) ✓` : `q ∉ p + span(D) ✗`;
+  } else el('outAff').textContent = `q ∉ p + span(D) ✗`;
+});
+el('affCoords').addEventListener('click', ()=>{
+  const m = parseInt(el('affDim').value);
+  const p = toVector(readMatrix(el('affPoint'), m, 1)), D = readMatrix(el('affDir'), m, parseInt(el('affK').value)), q = toVector(readMatrix(el('affQuery'), m, 1));
+  const rhs = q.map((qi,i)=>qi - (p[i]||0));
+  const sol = solve(D, rhs);
+  if(sol.type==='unique' || sol.type==='least_squares') el('outAff').textContent = `Affine coordinates:\n${sol.x.map(fmt).join('\n')}`;
+  else if(sol.type==='infinite') el('outAff').textContent = `Non-unique coordinates:\nParticular:\n${sol.x_p.map(fmt).join('\n')}\nNull space:\n${sol.nullspace.map(v=>v.map(fmt).join('\t')).join('\n')}`;
+  else el('outAff').textContent = `No affine coordinates.`;
+});
+
+el('exampleBtn').addEventListener('click', ()=>{
+  buildMatrix(el('matrixA'), 3, 3, [[2,-1,0],[1,2,1],[0,1,3]]); el('rowsA').value=3; el('colsA').value=3;
+  buildMatrix(el('vectorB'), 3, 1, [[1],[0],[4]]); el('lenB').value=3;
+  buildMatrix(el('matrixB'), 3, 2, [[1,0],[0,1],[2,-1]]); el('rowsBmat').value=3; el('colsBmat').value=2;
+  buildMatrix(el('vsMatrix'), 3, 3, [[1,0,1],[0,1,1],[1,1,2]]); el('vsDim').value=3; el('vsCount').value=3;
+  buildMatrix(el('mapMatrix'), 3, 3, [[1,2,0],[0,1,1],[3,-1,2]]); el('mapRows').value=3; el('mapCols').value=3;
+  buildMatrix(el('mapVector'), 3, 1, [[1],[2],[3]]);
+  buildMatrix(el('affPoint'), 3, 1, [[1],[0],[2]]); el('affDim').value=3;
+  buildMatrix(el('affDir'), 3, 2, [[1,0],[0,1],[1,1]]); el('affK').value=2;
+  buildMatrix(el('affQuery'), 3, 1, [[2],[1],[3]]);
+  document.querySelectorAll('.output').forEach(o=>o.textContent='');
+});
+el('clearBtn').addEventListener('click', ()=>{
+  buildMatrix(el('matrixA'), 2, 2, 0); el('rowsA').value=2; el('colsA').value=2;
+  buildMatrix(el('vectorB'), 2, 1, 0); el('lenB').value=2;
+  buildMatrix(el('matrixB'), 2, 2, 0); el('rowsBmat').value=2; el('colsBmat').value=2;
+  buildMatrix(el('vsMatrix'), 2, 2, 0); el('vsDim').value=2; el('vsCount').value=2;
+  buildMatrix(el('mapMatrix'), 2, 2, 0); el('mapRows').value=2; el('mapCols').value=2;
+  buildMatrix(el('mapVector'), 2, 1, 0);
+  buildMatrix(el('affPoint'), 2, 1, 0); el('affDim').value=2;
+  buildMatrix(el('affDir'), 2, 1, 0); el('affK').value=1;
+  buildMatrix(el('affQuery'), 2, 1, 0);
+  document.querySelectorAll('.output').forEach(o=>o.textContent='');
+});
+</script>
+</body>
+</html>
